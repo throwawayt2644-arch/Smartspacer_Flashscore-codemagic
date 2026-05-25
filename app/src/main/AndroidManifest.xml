@@ -12,9 +12,9 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/football"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/football"
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartspacerSofascore">
 
@@ -43,11 +43,11 @@
         <!-- Smartspacer Target Provider (ContentProvider) -->
         <provider
             android:name=".Target"
-            android:authorities="com.meilluer.smartspacerFlashScore.Target"
+            android:authorities="${applicationId}.target"
             android:exported="true"
-            android:permission="com.kieronquinn.app.smartspacer.permission.PROVIDER">
+            android:permission="com.kieronquinn.app.smartspacer.permission.ACCESS_SMARTSPACER_TARGETS">
             <intent-filter>
-                <action android:name="com.kieronquinn.app.smartspacer.action.TARGET_PROVIDER" />
+                <action android:name="com.kieronquinn.app.smartspacer.TARGET" />
             </intent-filter>
         </provider>
 

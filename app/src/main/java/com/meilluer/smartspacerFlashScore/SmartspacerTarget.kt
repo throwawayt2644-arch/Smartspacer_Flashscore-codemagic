@@ -2,6 +2,7 @@ package com.meilluer.smartspacerFlashScore
 
 import android.content.ComponentName
 import android.graphics.drawable.Icon
+import android.graphics.drawable.Icon.createWithResource
 import com.kieronquinn.app.smartspacer.sdk.model.SmartspaceTarget
 import com.kieronquinn.app.smartspacer.sdk.model.uitemplatedata.Icon as SmartspaceIcon
 import com.kieronquinn.app.smartspacer.sdk.model.uitemplatedata.Text
@@ -29,11 +30,11 @@ class Target : SmartspacerTargetProvider() {
 
         targets.add(
             TargetTemplate.Basic(
-                id = "notify",
+                id = "smartspacer_falshscore",
                 componentName = ComponentName(context!!, Target::class.java),
                 title = Text(displayTitle),
                 subtitle = Text(displaySubtitle),
-                icon = SmartspaceIcon(Icon.createWithResource(context!!, R.drawable.soccer))
+                icon = SmartspaceIcon(createWithResource(context!!, R.drawable.football), shouldTint = false)
             ).create()
         )
         
@@ -44,7 +45,7 @@ class Target : SmartspacerTargetProvider() {
         return Config(
             label = "FlashScore Live Match",
             description = "Displays live football scores and goal scorers parsed from FlashScore notifications.",
-            icon = Icon.createWithResource(context!!, R.drawable.soccer)
+            icon = createWithResource(context!!, R.drawable.football)
         )
     }
 

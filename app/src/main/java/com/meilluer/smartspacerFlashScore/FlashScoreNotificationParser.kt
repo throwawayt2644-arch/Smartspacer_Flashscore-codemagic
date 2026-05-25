@@ -50,7 +50,19 @@ object FlashScoreNotificationParser {
             "finished" in contentLower || "full-time" in contentLower || "ft" in contentLower || "after extra time" in contentLower -> {
                 match.extras = "Finished"
                 match.flag = false // Match complete
-                match.target_visibility = false
+                match.target_visibility = true // Keep visible for 30 mins
+                
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    match.target_visibility = false
+                    try {
+                        SmartspacerTargetProvider.notifyChange(context, Target::class.java, "smartspacer_falshscore")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to notify Smartspacer target change in delayed handler", e)
+                    }
+                    val updateIntent = Intent("com.meilluer.smartspacerFlashScore.UPDATE_MATCH_DATA")
+                    updateIntent.putExtra("matchId", match.id)
+                    context.sendBroadcast(updateIntent)
+                }, 30 * 60 * 1000L) // 30 minutes delay
             }
             "postponed" in contentLower -> {
                 match.extras = "Postponed"
@@ -82,7 +94,7 @@ object FlashScoreNotificationParser {
 
         // 6. Notify Smartspacer of Target/Widget changes
         try {
-            SmartspacerTargetProvider.notifyChange(context, Target::class.java, "notify")
+            SmartspacerTargetProvider.notifyChange(context, Target::class.java, "smartspacer_falshscore")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to notify Smartspacer target change", e)
         }
