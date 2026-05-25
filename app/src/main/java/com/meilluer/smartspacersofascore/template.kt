@@ -1,0 +1,1 @@
+// This file is obsolete. The functionality has been modularized and moved to MainActivity.kt, MatchData.kt, FlashScoreNotificationParser.kt, FlashScoreNotificationService.kt and SmartspacerTarget.kt.
