@@ -3,15 +3,15 @@ plugins {
 }
 
 android {
-    namespace = "com.meilluer.smartspacersofascore"
-    compileSdk = 35
+    namespace = "com.meilluer.smartspacerFlashScore"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.meilluer.smartspacersofascore"
+        applicationId = "com.meilluer.smartspacerFlashScore"
         minSdk = 29
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

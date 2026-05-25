@@ -1,4 +1,4 @@
-package com.meilluer.smartspacersofascore
+package com.meilluer.smartspacerFlashScore
 
 import android.content.Context
 import android.content.Intent
@@ -54,7 +54,7 @@ object FlashScoreNotificationParser {
                 "Status: ${MatchData.extras}")
 
         // 4. Send a local broadcast to MainActivity to refresh UI dynamically
-        val updateIntent = Intent("com.meilluer.smartspacersofascore.UPDATE_MATCH_DATA")
+        val updateIntent = Intent("com.meilluer.smartspacerFlashScore.UPDATE_MATCH_DATA")
         context.sendBroadcast(updateIntent)
 
         // 5. Notify Smartspacer of Target/Widget changes

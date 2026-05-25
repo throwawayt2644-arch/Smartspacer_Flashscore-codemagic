@@ -1,4 +1,4 @@
-package com.meilluer.smartspacersofascore
+package com.meilluer.smartspacerFlashScore
 
 import android.content.ComponentName
 import android.graphics.drawable.Icon

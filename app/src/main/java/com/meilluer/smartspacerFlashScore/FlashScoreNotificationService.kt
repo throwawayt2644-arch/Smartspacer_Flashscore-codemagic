@@ -1,4 +1,4 @@
-package com.meilluer.smartspacersofascore
+package com.meilluer.smartspacerFlashScore
 
 import android.app.Notification
 import android.service.notification.NotificationListenerService
@@ -37,7 +37,6 @@ class FlashScoreNotificationService : NotificationListenerService() {
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         super.onNotificationRemoved(sbn)
-        // Optionally handle match state on removal if needed
         sbn?.let {
             if (it.packageName == FLASHSCORE_PACKAGE) {
                 Log.d(TAG, "FlashScore notification removed from status bar.")

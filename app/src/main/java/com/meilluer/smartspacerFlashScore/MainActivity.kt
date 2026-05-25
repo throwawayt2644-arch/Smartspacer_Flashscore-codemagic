@@ -1,20 +1,29 @@
-package com.meilluer.smartspacersofascore
+package com.meilluer.smartspacerFlashScore
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.util.Random
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
+    }
 
     private lateinit var textPermissionStatus: TextView
     private lateinit var textPermissionDesc: TextView
@@ -35,6 +44,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnSimReset: Button
 
     private val random = Random()
+    private var hasPromptedListenerPermission = false
+    private var hasPromptedPostNotification = false
 
     private val matchUpdateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -51,15 +62,14 @@ class MainActivity : AppCompatActivity() {
 
         // Setup Permission Grant Button
         btnGrantPermission.setOnClickListener {
-            val intent = Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
-            startActivity(intent)
+            showNotificationListenerDialog()
         }
 
         // Setup Simulator Button Listeners
         setupSimulatorListeners()
 
         // Register receiver for match data updates
-        val filter = IntentFilter("com.meilluer.smartspacersofascore.UPDATE_MATCH_DATA")
+        val filter = IntentFilter("com.meilluer.smartspacerFlashScore.UPDATE_MATCH_DATA")
         ContextCompat.registerReceiver(
             this,
             matchUpdateReceiver,
@@ -75,6 +85,9 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         checkNotificationPermission()
         updateMatchUI()
+        
+        // Triggers popups sequentially to ensure an elegant first-run onboarding experience
+        showSequentialPermissionPopups()
     }
 
     override fun onDestroy() {
@@ -100,6 +113,84 @@ class MainActivity : AppCompatActivity() {
         btnSimHalf = findViewById(R.id.btnSimHalf)
         btnSimFull = findViewById(R.id.btnSimFull)
         btnSimReset = findViewById(R.id.btnSimReset)
+    }
+
+    private fun showSequentialPermissionPopups() {
+        // 1. First prompt for runtime Post Notifications if Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permissionStatus = ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
+            if (permissionStatus != PackageManager.PERMISSION_GRANTED && !hasPromptedPostNotification) {
+                hasPromptedPostNotification = true
+                showPostNotificationDialog()
+                return // Pause listener dialog until they respond
+            }
+        }
+
+        // 2. Prompt for Notification Listener Service
+        if (!isNotificationServiceEnabled() && !hasPromptedListenerPermission) {
+            hasPromptedListenerPermission = true
+            showNotificationListenerDialog()
+        }
+    }
+
+    private fun showPostNotificationDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Allow Live Highlight Alerts")
+            .setMessage("Would you like to receive system notifications for match events, goals, and half-time/full-time highlight summaries?")
+            .setIcon(R.drawable.soccer)
+            .setCancelable(false)
+            .setPositiveButton("Allow") { _, _ ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                        REQUEST_CODE_POST_NOTIFICATIONS
+                    )
+                }
+            }
+            .setNegativeButton("Maybe Later") { dialog, _ ->
+                dialog.dismiss()
+                // Proceed to check for next permission popup
+                if (!isNotificationServiceEnabled() && !hasPromptedListenerPermission) {
+                    hasPromptedListenerPermission = true
+                    showNotificationListenerDialog()
+                }
+            }
+            .show()
+    }
+
+    private fun showNotificationListenerDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Enable FlashScore Interceptor")
+            .setMessage("To automatically capture live score feeds, goal events, and scorer details from FlashScore notifications, this app requires Notification Access.\n\nAll notification data is processed strictly on-device and is never shared.")
+            .setIcon(R.drawable.soccer)
+            .setCancelable(false)
+            .setPositiveButton("Configure Settings") { _, _ ->
+                val intent = Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+                startActivity(intent)
+            }
+            .setNegativeButton("Maybe Later") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_POST_NOTIFICATIONS) {
+            // Proceed to check listener permission popup next
+            if (!isNotificationServiceEnabled() && !hasPromptedListenerPermission) {
+                hasPromptedListenerPermission = true
+                showNotificationListenerDialog()
+            }
+        }
     }
 
     private fun checkNotificationPermission() {

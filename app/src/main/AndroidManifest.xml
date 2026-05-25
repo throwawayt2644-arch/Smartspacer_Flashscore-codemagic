@@ -43,7 +43,7 @@
         <!-- Smartspacer Target Provider (ContentProvider) -->
         <provider
             android:name=".Target"
-            android:authorities="com.meilluer.smartspacersofascore.Target"
+            android:authorities="com.meilluer.smartspacerFlashScore.Target"
             android:exported="true"
             android:permission="com.kieronquinn.app.smartspacer.permission.PROVIDER">
             <intent-filter>

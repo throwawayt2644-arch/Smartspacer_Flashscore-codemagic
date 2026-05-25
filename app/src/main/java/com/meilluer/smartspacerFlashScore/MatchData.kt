@@ -1,4 +1,4 @@
-package com.meilluer.smartspacersofascore
+package com.meilluer.smartspacerFlashScore
 
 object MatchData {
     var title: String = ""

@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Smartspacer Sofascore"
+rootProject.name = "Smartspacer Flashcore"
 include(":app")
  
