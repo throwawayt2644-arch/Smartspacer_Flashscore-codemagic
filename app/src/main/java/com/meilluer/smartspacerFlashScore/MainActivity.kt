@@ -320,7 +320,7 @@ class MainActivity : AppCompatActivity() {
     private fun notifyTargetChanges() {
         try {
             com.kieronquinn.app.smartspacer.sdk.provider.SmartspacerTargetProvider.notifyChange(
-                this, Target::class.java, "notify"
+                applicationContext, Target::class.java, "smartspacer_falshscore"
             )
         } catch (e: Exception) {
             // Safe fallback inside environments lacking active SDK bindings

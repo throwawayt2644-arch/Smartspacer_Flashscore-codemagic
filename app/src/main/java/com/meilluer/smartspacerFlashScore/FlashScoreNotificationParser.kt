@@ -55,7 +55,7 @@ object FlashScoreNotificationParser {
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     match.target_visibility = false
                     try {
-                        SmartspacerTargetProvider.notifyChange(context, Target::class.java, "smartspacer_falshscore")
+                        SmartspacerTargetProvider.notifyChange(context.applicationContext, Target::class.java, "smartspacer_falshscore")
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to notify Smartspacer target change in delayed handler", e)
                     }
@@ -93,7 +93,7 @@ object FlashScoreNotificationParser {
 
         // 6. Notify Smartspacer of Target/Widget changes
         try {
-            SmartspacerTargetProvider.notifyChange(context, Target::class.java, "smartspacer_falshscore")
+            SmartspacerTargetProvider.notifyChange(context.applicationContext, Target::class.java, "smartspacer_falshscore")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to notify Smartspacer target change", e)
         }
@@ -188,7 +188,7 @@ object FlashScoreNotificationParser {
                     
                     // Notify Smartspacer
                     try {
-                        SmartspacerTargetProvider.notifyChange(context, Target::class.java, "smartspacer_falshscore")
+                        SmartspacerTargetProvider.notifyChange(context.applicationContext, Target::class.java, "smartspacer_falshscore")
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to notify Smartspacer target change in delayed goal handler", e)
                     }
