@@ -34,35 +34,38 @@ object FlashScoreNotificationParser {
         match.title = title
         match.subtitle = subtitle
         match.lastUpdated = System.currentTimeMillis()
-        match.flag = true // Keep tracking active match
 
         // 4. Handle specific match status inside clean match state
         val contentLower = "$title\n$subtitle".lowercase()
         when {
             "lineups are available" in contentLower || "lineups" in contentLower || "starts soon" in contentLower || "about to start" in contentLower || "starts in" in contentLower -> {
-                match.extras = "Lineups are available"
+                match.extras = "Match about to start"
+                match.flag = true
                 match.target_visibility = true
             }
-            "half-time" in contentLower || "half time" in contentLower -> {
+            "half-time" in contentLower || "half time" in contentLower || "ht" in contentLower -> {
                 match.extras = "Half-Time"
+                match.flag = true
                 match.target_visibility = true
             }
             "finished" in contentLower || "full-time" in contentLower || "ft" in contentLower || "after extra time" in contentLower -> {
-                match.extras = "Finished"
-                match.flag = false // Match complete
-                match.target_visibility = true // Keep visible for 30 mins
-                
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                    match.target_visibility = false
-                    try {
-                        SmartspacerTargetProvider.notifyChange(context.applicationContext, Target::class.java, "smartspacer_falshscore")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to notify Smartspacer target change in delayed handler", e)
-                    }
-                    val updateIntent = Intent("com.meilluer.smartspacerFlashScore.UPDATE_MATCH_DATA")
-                    updateIntent.putExtra("matchId", match.id)
-                    context.sendBroadcast(updateIntent)
-                }, 30 * 60 * 1000L) // 30 minutes delay
+                if (match.flag) { // Only schedule if it was previously active to avoid duplicate handlers
+                    match.extras = "Finished"
+                    match.flag = false // Match complete
+                    match.target_visibility = true // Keep visible for 30 mins
+                    
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        match.target_visibility = false
+                        try {
+                            SmartspacerTargetProvider.notifyChange(context.applicationContext, Target::class.java, "smartspacer_falshscore")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to notify Smartspacer target change in delayed handler", e)
+                        }
+                        val updateIntent = Intent("com.meilluer.smartspacerFlashScore.UPDATE_MATCH_DATA")
+                        updateIntent.putExtra("matchId", match.id)
+                        context.sendBroadcast(updateIntent)
+                    }, 30 * 60 * 1000L) // 30 minutes delay
+                }
             }
             "postponed" in contentLower -> {
                 match.extras = "Postponed"
@@ -70,6 +73,7 @@ object FlashScoreNotificationParser {
                 match.target_visibility = false
             }
             "goal" in contentLower || "⚽" in contentLower -> {
+                match.flag = true
                 match.target_visibility = true
                 parseGoalDetails(context, match, subtitle)
             }
@@ -77,6 +81,7 @@ object FlashScoreNotificationParser {
                 if (match.extras.isBlank() || match.extras == "Match started" || match.extras == "No active match") {
                     match.extras = "In Play"
                 }
+                match.flag = true
                 match.target_visibility = true
             }
         }
@@ -100,9 +105,14 @@ object FlashScoreNotificationParser {
     }
 
     private fun parseTeamsFromTitle(title: String): Pair<String, String>? {
-        var parts = title.split(" - ")
+        // Strip out common match status prefixes case-insensitively (e.g. "FT Real Madrid", "HT Arsenal", "Finished: Liverpool")
+        val cleanedTitle = title
+            .replace(Regex("""^(?i)(?:FT|HT|Finished|Half-Time|Half Time|Postponed|Live)\s*:?\s*"""), "")
+            .trim()
+
+        var parts = cleanedTitle.split(" - ")
         if (parts.size != 2) {
-            parts = title.split("-")
+            parts = cleanedTitle.split("-")
         }
         if (parts.size == 2) {
             val home = cleanTeamName(parts[0])
