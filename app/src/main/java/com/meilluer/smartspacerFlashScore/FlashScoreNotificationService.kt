@@ -25,13 +25,18 @@ class FlashScoreNotificationService : NotificationListenerService() {
                 val extras = it.notification.extras
                 val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
                 val subtitle = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
+                val subtext = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString() ?: ""
 
                 Log.d(TAG, "Intercepted Notification from package: $packageName")
                 Log.d(TAG, "Raw Title: \"$title\"")
                 Log.d(TAG, "Raw Subtitle: \"$subtitle\"")
+                Log.d(TAG, "Raw Subtext: \"$subtext\"")
+
+                // Combine main text and subtext for parsing
+                val parsedSubtitle = if (subtext.isNotBlank()) "$subtitle\n$subtext" else subtitle
 
                 // Parse and update state
-                FlashScoreNotificationParser.parse(this, title, subtitle)
+                FlashScoreNotificationParser.parse(this, title, parsedSubtitle)
             }
         }
     }
