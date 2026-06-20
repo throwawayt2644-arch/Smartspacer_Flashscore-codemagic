@@ -38,16 +38,6 @@ object FlashScoreNotificationParser {
         // 4. Handle specific match status inside clean match state
         val contentLower = "$title\n$subtitle".lowercase()
         when {
-            "lineups are available" in contentLower || "lineups" in contentLower || "starts soon" in contentLower || "about to start" in contentLower || "starts in" in contentLower -> {
-                match.extras = "Match about to start"
-                match.flag = true
-                match.target_visibility = true
-            }
-            "half-time" in contentLower || "half time" in contentLower || "ht" in contentLower -> {
-                match.extras = "Half-Time"
-                match.flag = true
-                match.target_visibility = true
-            }
             "finished" in contentLower || "full-time" in contentLower || "ft" in contentLower || "after extra time" in contentLower -> {
                 // Try to parse the final score from subtitle or title (e.g. "Match finished: 2 - 1" or "Wolves 2 - 1 Olympic FC Finished")
                 val finalScoreRegex = Regex("""(\d+)\s*-\s*(\d+)""")
@@ -74,6 +64,16 @@ object FlashScoreNotificationParser {
                         context.sendBroadcast(updateIntent)
                     }, 30 * 60 * 1000L) // 30 minutes delay
                 }
+            }
+            "lineups are available" in contentLower || "lineups" in contentLower || "starts soon" in contentLower || "about to start" in contentLower || "starts in" in contentLower -> {
+                match.extras = "Match about to start"
+                match.flag = true
+                match.target_visibility = true
+            }
+            "half-time" in contentLower || "half time" in contentLower || "ht" in contentLower -> {
+                match.extras = "Half-Time"
+                match.flag = true
+                match.target_visibility = true
             }
             "postponed" in contentLower -> {
                 match.extras = "Postponed"
@@ -113,9 +113,14 @@ object FlashScoreNotificationParser {
     }
 
     private fun parseTeamsFromTitle(title: String): Pair<String, String>? {
-        // Strip out common match status prefixes case-insensitively (e.g. "FT Real Madrid", "HT Arsenal", "Finished: Liverpool")
-        val cleanedTitle = title
+        // 1. Strip out common match status prefixes case-insensitively (e.g. "FT Real Madrid", "HT Arsenal", "Finished: Liverpool")
+        var cleanedTitle = title
             .replace(Regex("""^(?i)(?:FT|HT|Finished|Half-Time|Half Time|Postponed|Live)\s*:?\s*"""), "")
+            .trim()
+
+        // 2. Strip any score suffix at the end of the title (e.g. "USA - Australia 2 - 0" -> "USA - Australia")
+        cleanedTitle = cleanedTitle
+            .replace(Regex("""\s+\[?\d+]?\s*-\s*\[?\d+]?$"""), "")
             .trim()
 
         var parts = cleanedTitle.split(" - ")
