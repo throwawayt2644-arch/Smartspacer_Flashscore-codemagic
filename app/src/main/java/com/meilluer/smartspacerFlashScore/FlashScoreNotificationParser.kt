@@ -38,7 +38,8 @@ object FlashScoreNotificationParser {
         // 4. Handle specific match status inside clean match state
         val contentLower = "$title\n$subtitle".lowercase()
         val lines = subtitle.lines().map { it.trim() }.filter { it.isNotEmpty() }
-        val latestLineLower = lines.firstOrNull()?.lowercase() ?: ""
+        val latestLine = lines.firstOrNull() ?: ""
+        val latestLineLower = latestLine.lowercase()
 
         when {
             "finished" in contentLower || "full-time" in contentLower || "ft" in contentLower || "after extra time" in contentLower -> {
@@ -93,6 +94,12 @@ object FlashScoreNotificationParser {
                 match.extras = "Postponed"
                 match.flag = false
                 match.target_visibility = false
+            }
+            "correction" in contentLower -> {
+                match.flag = true
+                match.target_visibility = true
+                parseGoalDetails(context, match, subtitle)
+                match.extras = extractCorrectionReason(latestLine)
             }
             "goal" in contentLower || "⚽" in contentLower -> {
                 match.flag = true
@@ -163,28 +170,35 @@ object FlashScoreNotificationParser {
     private fun parseGoalDetails(context: Context, match: MatchState, subtitle: String) {
         val lines = subtitle.lines()
         val namesList = mutableListOf<String>()
+        val cancelledScorers = mutableListOf<String>()
         var extractedHomeScore: Int? = null
         var extractedAwayScore: Int? = null
 
         // Regex patterns for extracting goals, score updates, and scorers
         val scoreRegex = Regex("""(?:Goal!|⚽)?\s*(\[\d+]|\d+)\s*-\s*(\[\d+]|\d+)""", RegexOption.IGNORE_CASE)
         val bracketsDigitRegex = Regex("""\d+""")
+        val cancelledLineIndices = mutableSetOf<Int>()
+        for (i in lines.indices) {
+            val line = lines[i]
+            if (line.contains("Correction", ignoreCase = true)) {
+                if (i + 1 < lines.size) {
+                    cancelledLineIndices.add(i + 1)
+                }
+            }
+        }
 
-        for (line in lines) {
+        for ((i, line) in lines.withIndex()) {
             if (line.isBlank()) continue
 
-            // 1. Try to find the live score
-            val scoreMatch = scoreRegex.find(line)
-            if (scoreMatch != null) {
-                val leftPart = scoreMatch.groupValues[1]
-                val rightPart = scoreMatch.groupValues[2]
+            // 1. Try to find the live score (only take the first one we find to avoid older events overwriting)
+            if (extractedHomeScore == null && extractedAwayScore == null) {
+                val scoreMatch = scoreRegex.find(line)
+                if (scoreMatch != null) {
+                    val leftPart = scoreMatch.groupValues[1]
+                    val rightPart = scoreMatch.groupValues[2]
 
-                // Extract digits from the score parts ONLY if they represent the actively changed score marked by brackets!
-                if (leftPart.contains("[") || leftPart.contains("]")) {
-                    bracketsDigitRegex.find(leftPart)?.value?.toIntOrNull()?.let { extractedHomeScore = it }
-                }
-                if (rightPart.contains("[") || rightPart.contains("]")) {
-                    bracketsDigitRegex.find(rightPart)?.value?.toIntOrNull()?.let { extractedAwayScore = it }
+                    extractedHomeScore = bracketsDigitRegex.find(leftPart)?.value?.toIntOrNull() ?: leftPart.toIntOrNull()
+                    extractedAwayScore = bracketsDigitRegex.find(rightPart)?.value?.toIntOrNull() ?: rightPart.toIntOrNull()
                 }
             }
 
@@ -192,7 +206,12 @@ object FlashScoreNotificationParser {
             if (line.contains("Goal!", ignoreCase = true) || line.contains("⚽")) {
                 val scorer = extractScorerFromLine(line)
                 if (scorer.isNotBlank() && scorer != "Goal!") {
-                    namesList.add(scorer)
+                    if (i !in cancelledLineIndices) {
+                        namesList.add(scorer)
+                    } else {
+                        // Store cancelled scorers so we can remove them from the persistent list
+                        cancelledScorers.add(scorer)
+                    }
                 }
             }
         }
@@ -207,6 +226,11 @@ object FlashScoreNotificationParser {
                 .map { it.trim() }
                 .filter { it.isNotBlank() && it != "No goal scorers yet" && it != "Scorer not available" }
                 .toMutableList()
+
+            // Remove scorers that were cancelled by a correction
+            for (cancelled in cancelledScorers) {
+                currentScorersList.remove(cancelled)
+            }
 
             // Avoid duplicating the same goal scorer if notification triggers twice
             for (name in namesList) {
@@ -262,6 +286,18 @@ object FlashScoreNotificationParser {
         cleaned = cleaned.trim(',', '.', ' ', '(', ')')
 
         return cleaned
+    }
+
+    private fun extractCorrectionReason(line: String): String {
+        val regex = Regex("""Correction\s*(?:\((.*?)\))?""", RegexOption.IGNORE_CASE)
+        val match = regex.find(line)
+        if (match != null) {
+            val reason = match.groupValues[1]
+            if (reason.isNotBlank()) {
+                return "Correction ($reason)"
+            }
+        }
+        return "Correction"
     }
 }
 
